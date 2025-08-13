@@ -189,11 +189,6 @@
         <div style="height: 50px; background: #BBB">
             <button onclick='retry()' title="Retries the current state if stopped or stalled.">Retry</button>
 
-            <button disabled onclick='pause()' title="Pauses a running saga.">Pause</button>
-            <button disabled onclick='resume()' title="Resumes a running saga.">Resume</button>
-            <button disabled onclick='remove()' title="Removes the saga state. Avoid doing this on a running saga.">Remove</button>
-            <button disabled onclick='restart()' title="Removes the saga and sends the start event again making the state machine start from the beginning without any knowledge of previous run.">Restart</button>
-
             <!-- ko if: lastError -->
             <button onclick="showLastError()">Last Error</button>
             <!-- /ko -->
@@ -359,9 +354,8 @@
             };
         }
 
-        let saga = {};
-
         let viewModel = {
+            activities: ko.observableArray(),
             log: new LogViewModel(),
             updated: ko.observable(), // datetime
             isCompleted: ko.observable(false),
@@ -372,8 +366,8 @@
         };
 
         function retry() {
-            console.log("retry " + (saga.CurrentState))
-            publishMessage("RetryFaultedActivity", { retryState: saga.CurrentState });
+            console.log("retry " + (viewModel.currentState()))
+            publishMessage("RetryFaultedActivity", { retryState: viewModel.currentState() });
         }
 
         function publishMessage(typeName, value = {}) {
@@ -413,7 +407,7 @@
         }
 
         function showLastError() {
-            console.log(saga.LastError);
+            console.log(viewModel.lastError());
         }
 
         const evtSource = new EventSource(new URL('sse', window.location.origin + window.location.pathname + '/'));
@@ -575,19 +569,27 @@
                 if (svg && svg.getBBox().width > 0) {
                     clearInterval(poll);
 
-                    saga = await fetchState(new URL('state', window.location.origin + window.location.pathname + '/'));
-                    if (saga.LastError) highlightCurrentState(saga.CurrentState, 'lightpink');
-                    else highlightCurrentState(saga.CurrentState);
+                    // init viewmodel
+                    var result = await fetchState(new URL('state', window.location.origin + window.location.pathname + '/'));
 
-                    enablePanAndZoom(svg);
+                    let saga = result.saga;
+                    console.log(saga);
 
                     viewModel.log.loadLogData(saga.Log);
                     viewModel.lastError(saga.LastError);
                     viewModel.currentState(saga.CurrentState);
+                    viewModel.activities(result.activities);
+                    viewModel.updated(new Date(saga.Updated));
+                    viewModel.isCompleted(saga.Completed !== null);
+                    viewModel.progress.update(saga.Progress);
+                    viewModel.schedule.update(saga.Schedule);
 
                     ko.applyBindings(viewModel);
 
-                    console.log(saga);
+                    if (saga.LastError) highlightCurrentState(saga.CurrentState, 'lightpink');
+                    else highlightCurrentState(saga.CurrentState);
+
+                    enablePanAndZoom(svg);
                 }
             };
 
