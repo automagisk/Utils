@@ -17,9 +17,11 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
-            background: #f5f5f5;
+            height: 100vh;
+            background: #DDD;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .mermaid {
@@ -182,59 +184,243 @@
             .log-content::-webkit-scrollbar-thumb:hover {
                 background: #a8a8a8;
             }
+
+        .top-bar {
+            padding: 10px 20px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            gap: 20px;
+        }
+
+        .actions-section {
+            margin-left: auto;
+        }
+
+        .status-completed {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .status-running {
+            color: #f1c40f;
+            font-weight: bold;
+        }
+
+        .scheduled-events-section ul {
+            display: inline;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .scheduled-events-section li {
+            display: inline;
+            margin-right: 10px;
+            padding: 2px 5px;
+            background: #34495e;
+            border-radius: 3px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .bottom-bar {
+            background: #ecf0f1;
+            padding: 15px;
+            border-top: 1px solid #bdc3c7;
+        }
+
+        .diagram-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .activities-container {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .activity {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+        }
+
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: conic-gradient(
+                #27ae60 var(--progress, 0deg),
+                #ecf0f1 var(--progress, 0deg)
+            );
+        }
+
+        .progress-circle::before {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #ecf0f1;
+            border-radius: 50%;
+        }
+
+        .progress-text {
+            z-index: 1;
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .activity-name {
+            font-size: 12px;
+            text-align: center;
+            max-width: 120px;
+            word-wrap: break-word;
+        }
+
+        .checkmark {
+            z-index: 1;
+            color: #27ae60;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .activities-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .activities-container::-webkit-scrollbar-track {
+            background: #dcdcdc;
+        }
+
+        .activities-container::-webkit-scrollbar-thumb {
+            background: #a8a8a8;
+            border-radius: 4px;
+        }
+
+        .activities-container::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+
+        .top-bar button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background-color 0.2s;
+        }
+
+        .top-bar button:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
-<body style="background: #DDD;">
-    <div style="display: flex; flex-direction: column; height: 100%;">
-        <div style="height: 50px; background: #BBB">
+<body>
+    <div class="top-bar">
+        <div class="status-section">
+            <strong>Status:</strong>
+            <!-- ko if: isCompleted -->
+            <span class="status-completed">COMPLETED</span>
+            <!-- /ko -->
+            <!-- ko ifnot: isCompleted -->
+            <span class="status-running">RUNNING</span>
+            <!-- /ko -->
+        </div>
+        <div class="updated-section">
+            <strong>Last Updated:</strong>
+            <span data-bind="text: updated() ? updated().toLocaleString() : 'N/A'"></span>
+        </div>
+        <!-- ko if: schedule.events().length > 0 -->
+        <div class="scheduled-events-section">
+            <strong>Scheduled:</strong>
+            <ul data-bind="foreach: schedule.events">
+                <li><span data-bind="text: name"></span></li>
+            </ul>
+        </div>
+        <!-- /ko -->
+        <div class="actions-section">
             <button onclick='retry()' title="Retries the current state if stopped or stalled.">Retry</button>
-
             <!-- ko if: lastError -->
             <button onclick="showLastError()">Last Error</button>
             <!-- /ko -->
-
         </div>
-        <div style="flex: 1; display: flex; flex-direction: row; overflow-y: hidden">
+    </div>
 
-            <div class="log-container" data-bind="with: log">
-                <div class="log-header">
-                    Consumed Events
-                    <span style="float: right; font-size: 12px; opacity: 0.8;" data-bind="text: logScopes().length + ' event(s)'"></span>
-                </div>
-                <div class="log-content" data-bind="if: logScopes().length > 0">
-                    <!-- ko foreach: logScopes -->
-                    <div class="log-scope">
-                        <div class="scope-header" data-bind="click: $parent.toggleScope, css: { collapsed: !expanded() }">
-                            <span class="scope-toggle" data-bind="css: { expanded: expanded() }">▶</span>
-                            <div data-bind="text: messageType"></div>
-                            <div class="message-id" data-bind="text: formattedStart"></div>
-                        </div>
-                        <!-- ko if: expanded -->
-                        <div class="log-entries" data-bind="foreach: entries">
-                            <div class="log-entry">
-                                <div class="log-timestamp" data-bind="text: formattedOffset"></div>
-                                <div>
-                                    <span class="log-level" data-bind="text: logLevelText, css: 'log-level-' + logLevel"></span>
-                                    <span class="log-message" data-bind="text: message"></span>
-                                </div>
+    <div class="main-content">
+        <div class="log-container" data-bind="with: log">
+            <div class="log-header">
+                Consumed Events
+                <span style="float: right; font-size: 12px; opacity: 0.8;" data-bind="text: logScopes().length + ' event(s)'"></span>
+            </div>
+            <div class="log-content" data-bind="if: logScopes().length > 0">
+                <!-- ko foreach: logScopes -->
+                <div class="log-scope">
+                    <div class="scope-header" data-bind="click: $parent.toggleScope, css: { collapsed: !expanded() }">
+                        <span class="scope-toggle" data-bind="css: { expanded: expanded() }">▶</span>
+                        <div data-bind="text: messageType"></div>
+                        <div class="message-id" data-bind="text: formattedStart"></div>
+                    </div>
+                    <!-- ko if: expanded -->
+                    <div class="log-entries" data-bind="foreach: entries">
+                        <div class="log-entry">
+                            <div class="log-timestamp" data-bind="text: formattedOffset"></div>
+                            <div>
+                                <span class="log-level" data-bind="text: logLevelText, css: 'log-level-' + logLevel"></span>
+                                <span class="log-message" data-bind="text: message"></span>
                             </div>
                         </div>
-                        <!-- /ko -->
                     </div>
                     <!-- /ko -->
                 </div>
-                <!-- ko if: logScopes().length === 0 -->
-                <div class="empty-state">
-                    No log data available
-                </div>
                 <!-- /ko -->
             </div>
+            <!-- ko if: logScopes().length === 0 -->
+            <div class="empty-state">
+                No log data available
+            </div>
+            <!-- /ko -->
+        </div>
 
-            <div style="flex: 1; position: relative">
-                <div style="position: absolute; top: 20px; left: 20px; font-size: 20px;" data-bind="text: currentState, style: { color: lastError() ? 'red' : 'black' }"></div>
-                <div class="mermaid" id="graph">
-                    {{mermaid}}
+        <div class="diagram-container">
+            <div style="position: absolute; top: 20px; left: 20px; font-size: 20px; z-index: 10;" data-bind="text: currentState, style: { color: lastError() ? 'red' : 'black' }"></div>
+            <div class="mermaid" id="graph">
+                {{mermaid}}
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="activities-container" data-bind="foreach: activities">
+            <div class="activity">
+                <!-- ko with: $root.progress.byActivity[$data] -->
+                <div class="progress-circle" data-bind="style: { '--progress': (progress() * 3.6) + 'deg' }">
+                    <!-- ko if: isCompleted -->
+                    <span class="checkmark">✔</span>
+                    <!-- /ko -->
+                    <!-- ko ifnot: isCompleted -->
+                    <span class="progress-text" data-bind="text: progress() + '%'"></span>
+                    <!-- /ko -->
                 </div>
+                <!-- /ko -->
+                <span class="activity-name" data-bind="text: $data"></span>
             </div>
         </div>
     </div>
@@ -329,28 +515,26 @@
         function ScheduleViewModel() {
             var self = this;
 
-            self.update = function (data) {
+            self.events = ko.observableArray([]);
 
+            self.update = function (data) {
+                if (!data || !data.ByEvent) {
+                    self.events([]);
+                    return;
+                }
+
+                var newEvents = [];
                 for (var key in data.ByEvent) {
                     var item = data.ByEvent[key];
-
-                    if (item === null && self.byEvent[key]) {
-                        delete self.byEvent[key];
-                        continue;
-                    }
-
-                    if (!self.byEvent[key]) {
-                        var o = {};
-                        o.tokenId = ko.observable(item.TokenId || 0);
-                        o.scheduledTime = ko.observable(item.ScheduledTime || 0);
-                        self.byEvent[key] = o;
-                    }
-                    else {
-                        var o = self.byEvent[key];
-                        o.tokenId(item.TokenId);
-                        o.scheduledTime(item.ScheduledTime);
+                    if (item) {
+                        newEvents.push({
+                            name: key,
+                            tokenId: item.TokenId,
+                            scheduledTime: new Date(item.ScheduledTime).toLocaleString()
+                        });
                     }
                 }
+                self.events(newEvents);
             };
         }
 
