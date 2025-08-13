@@ -302,8 +302,74 @@
             };
         }
 
+        function ProgressViewModel() {
+            var self = this;
+
+            self.byActivity = {};
+
+            self.update = function (data) {
+
+                for (var key in data.ByActivity) {
+                    var item = data.ByActivity[key];
+
+                    if (!self.byActivity[key]) {
+                        var o = {};
+                        o.progress = ko.observable(item.Progress || 0);
+                        o.idsToCheckOff = ko.observableArray(item.IdsToCheckOff || []);
+                        o.completedIds = ko.observableArray(item.CompletedIds || []);
+                        o.isCompleted = ko.observable(item.IsCompleted || false);
+                        self.byActivity[key] = o;
+                    }
+                    else {
+                        var o = self.byActivity[key];
+                        o.progress(item.Progress);
+                        o.idsToCheckOff(item.IdsToCheckOff);
+                        o.completedIds(item.CompletedIds);
+                        o.isCompleted(item.IsCompleted);
+                    }
+                }
+            };
+        }
+
+        function ScheduleViewModel() {
+            var self = this;
+
+            self.update = function (data) {
+
+                for (var key in data.ByEvent) {
+                    var item = data.ByEvent[key];
+
+                    if (item === null && self.byEvent[key]) {
+                        delete self.byEvent[key];
+                        continue;
+                    }
+
+                    if (!self.byEvent[key]) {
+                        var o = {};
+                        o.tokenId = ko.observable(item.TokenId || 0);
+                        o.scheduledTime = ko.observable(item.ScheduledTime || 0);
+                        self.byEvent[key] = o;
+                    }
+                    else {
+                        var o = self.byEvent[key];
+                        o.tokenId(item.TokenId);
+                        o.scheduledTime(item.ScheduledTime);
+                    }
+                }
+            };
+        }
+
         let saga = {};
-        let viewModel = { log: new LogViewModel(), lastError: ko.observable(), currentState: ko.observable() };
+
+        let viewModel = {
+            log: new LogViewModel(),
+            updated: ko.observable(), // datetime
+            isCompleted: ko.observable(false),
+            lastError: ko.observable(),
+            currentState: ko.observable(),
+            schedule: new ScheduleViewModel(),
+            progress: new ProgressViewModel()
+        };
 
         function retry() {
             console.log("retry " + (saga.CurrentState))
@@ -352,15 +418,20 @@
 
         const evtSource = new EventSource(new URL('sse', window.location.origin + window.location.pathname + '/'));
         evtSource.onmessage = function (event) {
-            const state = JSON.parse(event.data);
-            console.log(state);
+            const sagaUpdated = JSON.parse(event.data);
+            console.log(sagaUpdated);
 
-            if (state.LastError) highlightCurrentState(state.CurrentState, 'lightpink');
-            else highlightCurrentState(state.CurrentState);
+            if (sagaUpdated.LastError) highlightCurrentState(sagaUpdated.CurrentState, 'lightpink');
+            else highlightCurrentState(sagaUpdated.CurrentState);
 
-            viewModel.log.appendLogScope(state.LogScope);
-            viewModel.lastError(state.LastError);
-            viewModel.currentState(state.CurrentState);
+            viewModel.log.appendLogScope(sagaUpdated.LogScope);
+            viewModel.lastError(sagaUpdated.LastError);
+            viewModel.currentState(sagaUpdated.CurrentState);
+
+            viewModel.progress.update(sagaUpdated.Progress);
+            viewModel.schedule.update(sagaUpdated.Schedule);
+            viewModel.updated(new Date(sagaUpdated.Updated));
+            viewModel.isCompleted(sagaUpdated.IsCompleted);
         };
 
         async function fetchState(url) {
