@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html style="width: 100%; height: 100%; padding: 0; margin: 0;">
 <head>
     <meta charset='utf-8' />
@@ -188,10 +188,11 @@
     <div style="display: flex; flex-direction: column; height: 100%;">
         <div style="height: 50px; background: #BBB">
             <button onclick='retry()' title="Retries the current state if stopped or stalled.">Retry</button>
-            <button onclick='pause()' title="Pauses a running saga.">Pause</button>
-            <button onclick='resume()' title="Resumes a running saga.">Resume</button>
-            <button onclick='remove()' title="Removes the saga state. Avoid doing this on a running saga.">Remove</button>
-            <button onclick='restart()' title="Removes the saga and sends the start event again making the state machine start from the beginning without any knowledge of previous run.">Restart</button>
+
+            <button disabled onclick='pause()' title="Pauses a running saga.">Pause</button>
+            <button disabled onclick='resume()' title="Resumes a running saga.">Resume</button>
+            <button disabled onclick='remove()' title="Removes the saga state. Avoid doing this on a running saga.">Remove</button>
+            <button disabled onclick='restart()' title="Removes the saga and sends the start event again making the state machine start from the beginning without any knowledge of previous run.">Restart</button>
 
             <!-- ko if: lastError -->
             <button onclick="showLastError()">Last Error</button>
